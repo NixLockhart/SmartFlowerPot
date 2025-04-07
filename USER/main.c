@@ -1,14 +1,14 @@
 /**
  ****************************************************************************************************
- * @file        wifi.c
+ * @file        main.c
  * @author      NixStudio(Nix Lockhart)
- * @version     V1.1
- * @date        2025-01-03
- * @brief       Smart Flower Pot 智能花盆v1.1
+ * @version     V1.2
+ * @date        2025-04-07
+ * @brief       Smart Flower Pot 智能花盆v1.2
  ****************************************************************************************************
  * @attention
  *
- * 实验平台:正点原子 STM32F103开发板
+ * 实现平台:正点原子 STM32F103开发板
  *
  ****************************************************************************************************
  */
@@ -178,7 +178,7 @@ void destory_active_screen(){
 	destroy_all_children(active_screen);
 }
 
-// 创建主界面
+//创建主界面
 void create_main_screen(void) {
     scr_main = lv_scr_act();
     lv_obj_set_style_bg_color(scr_main, lv_color_hex(0xADD8E6), 0);  //背景为浅蓝色
@@ -382,6 +382,7 @@ void update_menu_screen() {
     }
 }
 
+//创建上下限界面
 void create_limit_screen() {
     // 创建页面，并设置背景为浅蓝色
     scr_limit = lv_obj_create(NULL);
@@ -475,7 +476,7 @@ void update_limit_value() {
 
 
 
-// 创建手动操作界面
+//创建手动操作界面
 void create_manual_screen(void) {
      // 创建手动操作屏幕，并设置背景底色为浅蓝色
     scr_manual = lv_obj_create(NULL);
@@ -555,15 +556,14 @@ void create_manual_screen(void) {
     lv_obj_align(mode_label, LV_ALIGN_BOTTOM_MID, 0, 6);  // 底部居中对齐
 }
 
-// 处理手动操作
+//处理手动操作
 void update_manual_screen() {
 		lv_label_set_text(label_light_status, light_status?"Open":"Close");
 		lv_label_set_text(label_water_status, water_status?"Open":"Close");
 }
 
 //销毁弹窗
-void hide_and_destroy_popup(lv_timer_t *timer)
-{
+void hide_and_destroy_popup(lv_timer_t *timer) {
     if (popup_container) {
         lv_obj_del(popup_container);  // 销毁弹窗容器及其子对象
         popup_container = NULL;      // 设置为 NULL，防止重复销毁
@@ -572,7 +572,7 @@ void hide_and_destroy_popup(lv_timer_t *timer)
     lv_timer_del(timer);  // 销毁定时器
 }
 
-// 创建弹窗
+//创建弹窗
 void create_popup(void) {
 		if (popup_container) {
         return;
@@ -601,7 +601,7 @@ void hide_popup(lv_timer_t *timer) {
     lv_timer_del(timer);  // 删除定时器
 }
 
-// 显示弹窗
+//显示弹窗
 void show_popup(const char *message, uint32_t duration_ms) {
 		lv_label_set_text(popup_label, message);  // 设置弹窗内容
 		lv_obj_clear_flag(popup_container, LV_OBJ_FLAG_HIDDEN);  // 显示弹窗
@@ -611,7 +611,7 @@ void show_popup(const char *message, uint32_t duration_ms) {
 }
 
 
-// 处理菜单选择
+//处理菜单选择
 void handle_menu_selection(int index) {
     switch (index) {
 			case 0:
@@ -660,7 +660,7 @@ void handle_menu_selection(int index) {
     }
 }
 
-
+//界面交互逻辑
 void UI_Switch(uint8_t key){
 	if(current_screen==SCREEN_MAIN){	//主界面下按钮操作
 		switch(key){
@@ -818,6 +818,7 @@ void Warn_function(void){
 	}
 }
 
+//原子云无线控制
 void wireless_control(){
 	uint8_t exe=execute();
 	if(!mode&&exe!=8){
@@ -922,5 +923,3 @@ int main(void)
 			t++;
 		}
 }
-
-
