@@ -46,6 +46,10 @@ Server/
 app/
 docs/
 
+# === 开发文档（本地保留）===
+DEVELOPER_GUIDE.md
+GITHUB_UPLOAD_CHECKLIST.md
+
 # === 临时文件 ===
 *.tmp
 *.temp
