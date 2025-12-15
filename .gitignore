@@ -1,52 +1,52 @@
-# Prerequisites
-*.d
+# =============================================
+# SmartFlowerPot STM32 Project
+# =============================================
 
-# Object files
+# === Keil Build Output ===
+OBJ/
 *.o
-*.ko
-*.obj
-*.elf
-
-# Linker output
-*.ilk
-*.map
-*.exp
-
-# Precompiled Headers
-*.gch
-*.pch
-
-# Libraries
-*.lib
-*.a
-*.la
-*.lo
-
-# Shared objects (inc. Windows DLLs)
-*.dll
-*.so
-*.so.*
-*.dylib
-
-# Executables
-*.exe
-*.out
-*.app
-*.i*86
-*.x86_64
+*.d
+*.crf
+*.lnp
+*.lst
+*.htm
+*.dep
+*.axf
 *.hex
+*.bin
+*.map
+*.build_log.htm
 
-# Debug files
-*.dSYM/
-*.su
-*.idb
-*.pdb
+# === Keil User Config ===
+*.uvguix.*
+*.uvoptx
+*.bak
+JLinkLog.txt
+JLinkSettings.ini
 
-# Kernel Module Compile Results
-*.mod*
-*.cmd
-.tmp_versions/
-modules.order
-Module.symvers
-Mkfile.old
-dkms.conf
+# === USER 目录编译产物 ===
+USER/*.map
+USER/*.lst
+USER/*.uvguix.*
+USER/*.uvoptx
+
+# === IDE ===
+.vscode/
+.idea/
+.claude/
+
+# === OS ===
+.DS_Store
+Thumbs.db
+*~
+nul
+
+# === 不上传的独立项目 ===
+Server/
+app/
+docs/
+
+# === 临时文件 ===
+*.tmp
+*.temp
+*.log

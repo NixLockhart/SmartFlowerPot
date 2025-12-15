@@ -10,13 +10,14 @@
       <TargetName>LVGL</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>5060960::V5.06 update 7 (build 960)::.\ARMCC</pCCUsed>
+      <pArmCC>5060960::V5.06 update 7 (build 960)::.\ARM_Compiler_5.06u7</pArmCC>
+      <pCCUsed>5060960::V5.06 update 7 (build 960)::.\ARM_Compiler_5.06u7</pCCUsed>
       <uAC6>0</uAC6>
       <TargetOption>
         <TargetCommonOption>
           <Device>STM32F103ZE</Device>
           <Vendor>STMicroelectronics</Vendor>
-          <PackID>Keil.STM32F1xx_DFP.2.3.0</PackID>
+          <PackID>Keil.STM32F1xx_DFP.1.0.5</PackID>
           <PackURL>http://www.keil.com/pack/</PackURL>
           <Cpu>IROM(0x08000000,0x80000) IRAM(0x20000000,0x10000) CPUTYPE("Cortex-M3") CLOCK(12000000) ELITTLE</Cpu>
           <FlashUtilSpec></FlashUtilSpec>
@@ -186,6 +187,7 @@
             <RvdsVP>0</RvdsVP>
             <RvdsMve>0</RvdsMve>
             <RvdsCdeCp>0</RvdsCdeCp>
+            <nBranchProt>0</nBranchProt>
             <hadIRAM2>0</hadIRAM2>
             <hadIROM2>0</hadIROM2>
             <StupSel>8</StupSel>
@@ -339,7 +341,7 @@
               <MiscControls>--diag_suppress=68,111,188,223,546,1295</MiscControls>
               <Define>STM32F10X_HD,USE_STDPERIPH_DRIVER</Define>
               <Undefine></Undefine>
-              <IncludePath>..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\SYSTEM\adcx;..\STM32F10x_FWLib\inc;..\USER;..\CORE;..\Middlewares\LVGL\GUI;..\Middlewares\LVGL\GUI\lvgl;..\Middlewares\LVGL\GUI\lvgl\src;..\Middlewares\LVGL\GUI\lvgl\examples\porting;..\HARDWARE\LED;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\RTC;..\HARDWARE\RTC;..\HARDWARE\WKUP;..\HARDWARE\ADC;..\HARDWARE\DAC;..\HARDWARE\DMA;..\HARDWARE\IIC;..\HARDWARE\24CXX;..\HARDWARE\SPI;..\HARDWARE\TOUCH;..\HARDWARE\W25QXX;..\HARDWARE\TIMER;..\HARDWARE\ADC;..\HARDWARE\BEEP;..\HARDWARE\DHT11;..\HARDWARE\LSENS;..\HARDWARE\USART3;..\HARDWARE\TPAD;..\HARDWARE\BUMP;..\HARDWARE\ATK_MW8266D;..\HARDWARE\TS;..\Functions\UI;..\Functions\WiFi</IncludePath>
+              <IncludePath>..\SYSTEM\delay;..\SYSTEM\sys;..\SYSTEM\usart;..\SYSTEM\adcx;..\STM32F10x_FWLib\inc;..\USER;..\CORE;..\Middlewares\LVGL\GUI;..\Middlewares\LVGL\GUI\lvgl;..\Middlewares\LVGL\GUI\lvgl\src;..\Middlewares\LVGL\GUI\lvgl\examples\porting;..\HARDWARE\LED;..\HARDWARE\KEY;..\HARDWARE\LCD;..\HARDWARE\RTC;..\HARDWARE\RTC;..\HARDWARE\WKUP;..\HARDWARE\ADC;..\HARDWARE\DAC;..\HARDWARE\DMA;..\HARDWARE\IIC;..\HARDWARE\24CXX;..\HARDWARE\SPI;..\HARDWARE\TOUCH;..\HARDWARE\W25QXX;..\HARDWARE\TIMER;..\HARDWARE\ADC;..\HARDWARE\BEEP;..\HARDWARE\DHT11;..\HARDWARE\LSENS;..\HARDWARE\USART3;..\HARDWARE\TPAD;..\HARDWARE\BUMP;..\HARDWARE\ATK_MW8266D;..\HARDWARE\TS;..\Functions\UI;..\Functions\MyServer</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -1494,9 +1496,14 @@
           <GroupName>Functions</GroupName>
           <Files>
             <File>
-              <FileName>wifi.c</FileName>
+              <FileName>ui.c</FileName>
               <FileType>1</FileType>
-              <FilePath>..\Functions\WiFi\wifi.c</FilePath>
+              <FilePath>..\Functions\UI\ui.c</FilePath>
+            </File>
+            <File>
+              <FileName>myserver.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Functions\MyServer\myserver.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -1509,5 +1516,14 @@
     <components/>
     <files/>
   </RTE>
+
+  <LayerInfo>
+    <Layers>
+      <Layer>
+        <LayName>TOUCH</LayName>
+        <LayPrjMark>1</LayPrjMark>
+      </Layer>
+    </Layers>
+  </LayerInfo>
 
 </Project>

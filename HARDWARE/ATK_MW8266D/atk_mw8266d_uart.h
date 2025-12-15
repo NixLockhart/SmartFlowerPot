@@ -1,19 +1,19 @@
 /**
  ****************************************************************************************************
  * @file        atk_mw8266d_uart.h
- * @author      ÕýµãÔ­×ÓÍÅ¶Ó(ALIENTEK)
+ * @author      ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ï¿½Å¶ï¿½(ALIENTEK)
  * @version     V1.0
  * @date        2022-06-21
- * @brief       ATK-MW8266DÄ£¿éUART½Ó¿ÚÇý¶¯´úÂë£¨Standard Peripheral Library°æ±¾£©
- * @license     Copyright (c) 2020-2032, ¹ãÖÝÊÐÐÇÒíµç×Ó¿Æ¼¼ÓÐÏÞ¹«Ë¾
+ * @brief       ATK-MW8266DÄ£ï¿½ï¿½UARTï¿½Ó¿ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë£¨Standard Peripheral Libraryï¿½æ±¾ï¿½ï¿½
+ * @license     Copyright (c) 2020-2032, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó¿Æ¼ï¿½ï¿½ï¿½ï¿½Þ¹ï¿½Ë¾
  ****************************************************************************************************
  * @attention
  *
- * ÊµÑéÆ½Ì¨:ÕýµãÔ­×Ó STM32F103¿ª·¢°å
- * ÔÚÏßÊÓÆµ:www.yuanzige.com
- * ¼¼ÊõÂÛÌ³:www.openedv.com
- * ¹«Ë¾ÍøÖ·:www.alientek.com
- * ¹ºÂòµØÖ·:openedv.taobao.com
+ * Êµï¿½ï¿½Æ½Ì¨:ï¿½ï¿½ï¿½ï¿½Ô­ï¿½ï¿½ STM32F103ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æµ:www.yuanzige.com
+ * ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì³:www.openedv.com
+ * ï¿½ï¿½Ë¾ï¿½ï¿½Ö·:www.alientek.com
+ * ï¿½ï¿½ï¿½ï¿½ï¿½Ö·:openedv.taobao.com
  *
  ****************************************************************************************************
  */
@@ -21,9 +21,9 @@
 #ifndef __ATK_MW8266D_UART_H
 #define __ATK_MW8266D_UART_H
 
-#include "stm32f10x.h"  /* °üº¬±ê×¼ÍâÉè¿âÍ·ÎÄ¼þ */
+#include "stm32f10x.h"  /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×¼ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½Ä¼ï¿½ */
 
-/* Òý½Å¶¨Òå */
+/* ï¿½ï¿½ï¿½Å¶ï¿½ï¿½ï¿½ */
 #define ATK_MW8266D_UART_TX_GPIO_PORT           GPIOB
 #define ATK_MW8266D_UART_TX_GPIO_PIN            GPIO_Pin_10
 #define ATK_MW8266D_UART_TX_GPIO_CLK            RCC_APB2Periph_GPIOB
@@ -37,16 +37,16 @@
 #define ATK_MW8266D_UART_IRQn                   USART3_IRQn
 #define ATK_MW8266D_UART_IRQHandler             USART3_IRQHandler
 
-/* UARTÊÕ·¢»º³å´óÐ¡ */
-#define ATK_MW8266D_UART_RX_BUF_SIZE            128
+/* UARTï¿½Õ·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ */
+#define ATK_MW8266D_UART_RX_BUF_SIZE            512
 #define ATK_MW8266D_UART_TX_BUF_SIZE            64
 
-/* ²Ù×÷º¯Êý */
+/* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
 void atk_mw8266d_uart_printf(char *fmt, ...);       /* ATK-MW8266D UART printf */
-void atk_mw8266d_uart_rx_restart(void);             /* ATK-MW8266D UARTÖØÐÂ¿ªÊ¼½ÓÊÕÊý¾Ý */
-uint8_t *atk_mw8266d_uart_rx_get_frame(void);       /* »ñÈ¡ATK-MW8266D UART½ÓÊÕµ½µÄÒ»Ö¡Êý¾Ý */
-uint16_t atk_mw8266d_uart_rx_get_frame_len(void);   /* »ñÈ¡ATK-MW8266D UART½ÓÊÕµ½µÄÒ»Ö¡Êý¾ÝµÄ³¤¶È */
-void atk_mw8266d_uart_init(uint32_t baudrate);      /* ATK-MW8266D UART³õÊ¼»¯ */
+void atk_mw8266d_uart_rx_restart(void);             /* ATK-MW8266D UARTï¿½ï¿½ï¿½Â¿ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
+uint8_t *atk_mw8266d_uart_rx_get_frame(void);       /* ï¿½ï¿½È¡ATK-MW8266D UARTï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½Ò»Ö¡ï¿½ï¿½ï¿½ï¿½ */
+uint16_t atk_mw8266d_uart_rx_get_frame_len(void);   /* ï¿½ï¿½È¡ATK-MW8266D UARTï¿½ï¿½ï¿½Õµï¿½ï¿½ï¿½Ò»Ö¡ï¿½ï¿½ï¿½ÝµÄ³ï¿½ï¿½ï¿½ */
+void atk_mw8266d_uart_init(uint32_t baudrate);      /* ATK-MW8266D UARTï¿½ï¿½Ê¼ï¿½ï¿½ */
 
 #endif
 
