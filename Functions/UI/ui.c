@@ -4,7 +4,7 @@
  * @author      NixStudio(NixLockhart)
  * @version     V1.1
  * @date        2025-06-08
- * @lastupdate  2025-12-13
+ * @lastupdate  2025-12-15
  * @brief       UI模块实现
  ****************************************************************************************************
  * @attention
@@ -38,12 +38,17 @@ static screen_t current_screen = SCREEN_MAIN;
 static uint8_t menu_index = 0;
 static uint8_t menu_item = 4;
 static uint8_t limit_page = 1;
+static uint8_t limit_index = 0;   /* 阈值设置页面当前选中项 (0=上限, 1=下限) */
 static uint8_t manual_index = 0;  /* 手动控制页面当前选中项 (0=水泵, 1=补光灯, 2=风扇) */
 
 /* 手动控制页面容器对象 */
 static lv_obj_t *water_container;
 static lv_obj_t *light_container;
 static lv_obj_t *fan_container;
+
+/* 阈值设置页面容器对象 */
+static lv_obj_t *upper_container;
+static lv_obj_t *lower_container;
 
 /* 屏幕对象 */
 static lv_obj_t *scr_main;
@@ -67,6 +72,7 @@ static lv_obj_t *label_upper_value;
 /* 弹窗容器对象 */
 static lv_obj_t *popup_container;
 static lv_obj_t *popup_label;
+static lv_timer_t *popup_timer;  /* 弹窗定时器 */
 
 /* 阈值边界 */
 static uint8_t temp_max = 50;
@@ -92,6 +98,9 @@ void UI_Init(void) {
     lim_value.light_lower = 50;
 }
 
+/* 前向声明 */
+static void cleanup_popup(void);
+
 /**
  * @brief  删除所有子对象
  * @param  parent: 父对象指针
@@ -107,9 +116,13 @@ void destroy_all_children(lv_obj_t *parent) {
 
 /**
  * @brief  销毁当前活动屏幕
+ * @note   销毁前先清理弹窗定时器，防止内存访问错误
  * @retval 无
  */
 void destory_active_screen() {
+    /* 先清理弹窗，防止定时器访问已销毁的对象 */
+    cleanup_popup();
+
     lv_obj_t *active_screen = lv_scr_act();
     destroy_all_children(active_screen);
 }
@@ -121,14 +134,14 @@ void destory_active_screen() {
  */
 void create_main_screen(void) {
     scr_main = lv_scr_act();
-    lv_obj_set_style_bg_color(scr_main, lv_color_hex(0xADD8E6), 0);  /* 设置为浅蓝色 */
+    lv_obj_set_style_bg_color(scr_main, lv_color_hex(UI_COLOR_BG_SCREEN), 0);  /* 设置为浅蓝色 */
     lv_obj_set_style_bg_opa(scr_main, LV_OPA_COVER, 0);
 
     /* 创建标题栏 */
     lv_obj_t *title_container = lv_obj_create(scr_main);
     lv_obj_set_size(title_container, 320, 40);
     lv_obj_align(title_container, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_set_style_bg_color(title_container, lv_color_hex(0x4682B4), 0);  /* 深蓝色背景 */
+    lv_obj_set_style_bg_color(title_container, lv_color_hex(UI_COLOR_BG_TITLE), 0);  /* 深蓝色背景 */
     lv_obj_set_style_bg_opa(title_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(title_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -142,7 +155,7 @@ void create_main_screen(void) {
     lv_obj_t *temp_container = lv_obj_create(scr_main);
     lv_obj_set_size(temp_container, 140, 60);
     lv_obj_align(temp_container, LV_ALIGN_TOP_LEFT, 10, 50);
-    lv_obj_set_style_bg_color(temp_container, lv_color_hex(0xFF7F7F), 0);  /* 红色背景 */
+    lv_obj_set_style_bg_color(temp_container, lv_color_hex(UI_COLOR_BG_TEMP), 0);  /* 红色背景 */
     lv_obj_set_style_bg_opa(temp_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(temp_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -160,7 +173,7 @@ void create_main_screen(void) {
     lv_obj_t *humi_container = lv_obj_create(scr_main);
     lv_obj_set_size(humi_container, 140, 60);
     lv_obj_align(humi_container, LV_ALIGN_TOP_RIGHT, -10, 50);
-    lv_obj_set_style_bg_color(humi_container, lv_color_hex(0x00AA00), 0);  /* 绿色背景 */
+    lv_obj_set_style_bg_color(humi_container, lv_color_hex(UI_COLOR_BG_HUMI), 0);  /* 绿色背景 */
     lv_obj_set_style_bg_opa(humi_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(humi_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -178,7 +191,7 @@ void create_main_screen(void) {
     lv_obj_t *soil_humi_container = lv_obj_create(scr_main);
     lv_obj_set_size(soil_humi_container, 140, 60);
     lv_obj_align(soil_humi_container, LV_ALIGN_BOTTOM_LEFT, 10, -50);
-    lv_obj_set_style_bg_color(soil_humi_container, lv_color_hex(0xFFD700), 0);  /* 金色背景 */
+    lv_obj_set_style_bg_color(soil_humi_container, lv_color_hex(UI_COLOR_BG_SOIL), 0);  /* 金色背景 */
     lv_obj_set_style_bg_opa(soil_humi_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(soil_humi_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -196,7 +209,7 @@ void create_main_screen(void) {
     lv_obj_t *light_container = lv_obj_create(scr_main);
     lv_obj_set_size(light_container, 140, 60);
     lv_obj_align(light_container, LV_ALIGN_BOTTOM_RIGHT, -10, -50);
-    lv_obj_set_style_bg_color(light_container, lv_color_hex(0x00BFFF), 0);  /* 天蓝色背景 */
+    lv_obj_set_style_bg_color(light_container, lv_color_hex(UI_COLOR_BG_LIGHT), 0);  /* 天蓝色背景 */
     lv_obj_set_style_bg_opa(light_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(light_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -214,20 +227,14 @@ void create_main_screen(void) {
     lv_obj_t *mode_container = lv_obj_create(scr_main);
     lv_obj_set_size(mode_container, 320, 30);
     lv_obj_align(mode_container, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_set_style_bg_color(mode_container, lv_color_hex(0x4682B4), 0);  /* 深蓝色背景 */
+    lv_obj_set_style_bg_color(mode_container, lv_color_hex(UI_COLOR_BG_TITLE), 0);  /* 深蓝色背景 */
     lv_obj_set_style_bg_opa(mode_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(mode_container, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t *mode_label = lv_label_create(mode_container);
-    lv_label_set_text(mode_label, "Mode: ");
-    lv_obj_set_style_text_color(mode_label, lv_color_black(), 0);
-    lv_obj_set_style_text_font(mode_label, &lv_font_montserrat_14, 0);
-    lv_obj_align(mode_label, LV_ALIGN_BOTTOM_MID, mode?-30:-20, 6);
-
     label_mode = lv_label_create(mode_container);
-    lv_label_set_text(label_mode, "Auto");
+    lv_label_set_text(label_mode, "Mode: Auto");
     lv_obj_set_style_text_color(label_mode, lv_color_black(), 0);
-    lv_obj_align(label_mode, LV_ALIGN_BOTTOM_MID, mode?23:18, 6);
+    lv_obj_align(label_mode, LV_ALIGN_BOTTOM_MID, 0, 6);
 }
 
 /**
@@ -240,7 +247,7 @@ void update_main_screen() {
     lv_label_set_text_fmt(label_humi, "%d %%", humi);
     lv_label_set_text_fmt(label_soil_humi,"%d %%", soil_humi);
     lv_label_set_text_fmt(label_light, "%d %%", light_intensity);
-    lv_label_set_text_fmt(label_mode, mode==1 ?"Manual":"Auto");
+    lv_label_set_text_fmt(label_mode, mode==1 ?"Mode: Manual":"Mode: Auto");
 }
 
 /**
@@ -250,14 +257,14 @@ void update_main_screen() {
  */
 void create_menu_screen(void) {
     scr_menu = lv_obj_create(NULL);
-    lv_obj_set_style_bg_color(scr_menu, lv_color_hex(0xADD8E6), 0);  /* 浅蓝色背景 */
+    lv_obj_set_style_bg_color(scr_menu, lv_color_hex(UI_COLOR_BG_SCREEN), 0);  /* 浅蓝色背景 */
     lv_obj_set_style_bg_opa(scr_menu, LV_OPA_COVER, 0);
 
     /* 创建标题栏 */
     lv_obj_t *title_container = lv_obj_create(scr_menu);
     lv_obj_set_size(title_container, 320, 40);
     lv_obj_align(title_container, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_set_style_bg_color(title_container, lv_color_hex(0x4682B4), 0);
+    lv_obj_set_style_bg_color(title_container, lv_color_hex(UI_COLOR_BG_TITLE), 0);
     lv_obj_set_style_bg_opa(title_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(title_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -281,7 +288,7 @@ void create_menu_screen(void) {
     lv_obj_t *tip_container = lv_obj_create(scr_menu);
     lv_obj_set_size(tip_container, 320, 30);
     lv_obj_align(tip_container, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_set_style_bg_color(tip_container, lv_color_hex(0x4682B4), 0);
+    lv_obj_set_style_bg_color(tip_container, lv_color_hex(UI_COLOR_BG_TITLE), 0);
     lv_obj_set_style_bg_opa(tip_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(tip_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -345,14 +352,14 @@ void update_menu_screen() {
  */
 void create_limit_screen() {
     scr_limit = lv_obj_create(NULL);
-    lv_obj_set_style_bg_color(scr_limit, lv_color_hex(0xADD8E6), 0);  /* 浅蓝色背景 */
+    lv_obj_set_style_bg_color(scr_limit, lv_color_hex(UI_COLOR_BG_SCREEN), 0);  /* 浅蓝色背景 */
     lv_obj_set_style_bg_opa(scr_limit, LV_OPA_COVER, 0);
 
     /* 创建标题栏 */
     lv_obj_t *title_container = lv_obj_create(scr_limit);
     lv_obj_set_size(title_container, 320, 40);
     lv_obj_align(title_container, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_set_style_bg_color(title_container, lv_color_hex(0x4682B4), 0);
+    lv_obj_set_style_bg_color(title_container, lv_color_hex(UI_COLOR_BG_TITLE), 0);
     lv_obj_set_style_bg_opa(title_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(title_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -363,12 +370,17 @@ void create_limit_screen() {
     lv_obj_set_style_text_font(title_label, &lv_font_montserrat_18, 0);
     lv_obj_align(title_label, LV_ALIGN_CENTER, 0, 0);
 
+    /* 重置选中项索引 */
+    limit_index = 0;
+
     /* 上限设置区域 */
-    lv_obj_t *upper_container = lv_obj_create(scr_limit);
-    lv_obj_set_size(upper_container, 200, 60);
-    lv_obj_align(upper_container, LV_ALIGN_TOP_MID, 0, 60);
-    lv_obj_set_style_bg_color(upper_container, lv_color_hex(0x87CEEB), 0);  /* 浅蓝色背景 */
+    upper_container = lv_obj_create(scr_limit);
+    lv_obj_set_size(upper_container, 280, 40);
+    lv_obj_align(upper_container, LV_ALIGN_TOP_MID, 0, 48);
+    lv_obj_set_style_bg_color(upper_container, lv_color_hex(UI_COLOR_BG_UPPER), 0);  /* 浅蓝色背景 */
     lv_obj_set_style_bg_opa(upper_container, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(upper_container, 3, 0);  /* 选中时边框 */
+    lv_obj_set_style_border_color(upper_container, lv_color_hex(UI_COLOR_BORDER_SELECTED), 0);  /* 红色边框表示选中 */
     lv_obj_clear_flag(upper_container, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *label_upper = lv_label_create(upper_container);
@@ -380,17 +392,18 @@ void create_limit_screen() {
     label_upper_value = lv_label_create(upper_container);
     lv_label_set_text_fmt(label_upper_value, limit_page == 1 ? "%d C" : "%d %%",
                           limit_page == 1 ? lim_value.temp_upper :
-                          (limit_page == 2 ? lim_value.humi_upper : lim_value.light_upper));
+                          (limit_page == 2 ? lim_value.shumi_upper : lim_value.light_upper));
     lv_obj_set_style_text_color(label_upper_value, lv_color_black(), 0);
-    lv_obj_set_style_text_font(label_upper_value, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_font(label_upper_value, &lv_font_montserrat_16, 0);
     lv_obj_align(label_upper_value, LV_ALIGN_RIGHT_MID, -10, 0);
 
     /* 下限设置区域 */
-    lv_obj_t *lower_container = lv_obj_create(scr_limit);
-    lv_obj_set_size(lower_container, 200, 60);
-    lv_obj_align(lower_container, LV_ALIGN_TOP_MID, 0, 130);
-    lv_obj_set_style_bg_color(lower_container, lv_color_hex(0xFFEC8B), 0);  /* 浅黄色背景 */
+    lower_container = lv_obj_create(scr_limit);
+    lv_obj_set_size(lower_container, 280, 40);
+    lv_obj_align(lower_container, LV_ALIGN_TOP_MID, 0, 96);
+    lv_obj_set_style_bg_color(lower_container, lv_color_hex(UI_COLOR_BG_LOWER), 0);  /* 浅黄色背景 */
     lv_obj_set_style_bg_opa(lower_container, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(lower_container, 0, 0);  /* 未选中无边框 */
     lv_obj_clear_flag(lower_container, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *label_lower = lv_label_create(lower_container);
@@ -402,33 +415,45 @@ void create_limit_screen() {
     label_lower_value = lv_label_create(lower_container);
     lv_label_set_text_fmt(label_lower_value, limit_page == 1 ? "%d C" : "%d %%",
                           limit_page == 1 ? lim_value.temp_lower :
-                          (limit_page == 2 ? lim_value.humi_lower : lim_value.light_lower));
+                          (limit_page == 2 ? lim_value.shumi_lower : lim_value.light_lower));
     lv_obj_set_style_text_color(label_lower_value, lv_color_black(), 0);
-    lv_obj_set_style_text_font(label_lower_value, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_font(label_lower_value, &lv_font_montserrat_16, 0);
     lv_obj_align(label_lower_value, LV_ALIGN_RIGHT_MID, -10, 0);
 
     /* 底部操作提示栏 */
     lv_obj_t *tip_container = lv_obj_create(scr_limit);
     lv_obj_set_size(tip_container, 320, 30);
     lv_obj_align(tip_container, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_set_style_bg_color(tip_container, lv_color_hex(0x4682B4), 0);
+    lv_obj_set_style_bg_color(tip_container, lv_color_hex(UI_COLOR_BG_TITLE), 0);
     lv_obj_set_style_bg_opa(tip_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(tip_container, LV_OBJ_FLAG_SCROLLABLE);
 
-    lv_obj_t *mode_label = lv_label_create(tip_container);
-    lv_label_set_text(mode_label, "KEY0: Lower+\tKEY1:Upper+");
-    lv_obj_set_style_text_color(mode_label, lv_color_black(), 0);
-    lv_obj_set_style_text_font(mode_label, &lv_font_montserrat_14, 0);
-    lv_obj_align(mode_label, LV_ALIGN_BOTTOM_MID, 0, 6);
+    lv_obj_t *tip_label = lv_label_create(tip_container);
+    lv_label_set_text(tip_label, "KEY_UP:Add\tKEY0:Down\tKEY1:Up");
+    lv_obj_set_style_text_color(tip_label, lv_color_black(), 0);
+    lv_obj_set_style_text_font(tip_label, &lv_font_montserrat_14, 0);
+    lv_obj_align(tip_label, LV_ALIGN_BOTTOM_MID, 0, 6);
 }
 
 /**
  * @brief  更新阈值设置屏幕数据
+ * @note   刷新数值显示和选中高亮
  * @retval 无
  */
-void update_limit_value() {
+void update_limit_screen() {
+    /* 更新数值显示 */
     lv_label_set_text_fmt(label_upper_value,limit_page==1?"%d C":"%d %%",limit_page==1?lim_value.temp_upper:(limit_page==2?lim_value.shumi_upper:lim_value.light_upper));
     lv_label_set_text_fmt(label_lower_value,limit_page==1?"%d C":"%d %%",limit_page==1?lim_value.temp_lower:(limit_page==2?lim_value.shumi_lower:lim_value.light_lower));
+
+    /* 更新选中项高亮边框 */
+    lv_obj_set_style_border_width(upper_container, limit_index == 0 ? 3 : 0, 0);
+    lv_obj_set_style_border_width(lower_container, limit_index == 1 ? 3 : 0, 0);
+
+    if (limit_index == 0) {
+        lv_obj_set_style_border_color(upper_container, lv_color_hex(UI_COLOR_BORDER_SELECTED), 0);
+    } else {
+        lv_obj_set_style_border_color(lower_container, lv_color_hex(UI_COLOR_BORDER_SELECTED), 0);
+    }
 }
 
 /**
@@ -438,14 +463,14 @@ void update_limit_value() {
  */
 void create_manual_screen(void) {
     scr_manual = lv_obj_create(NULL);
-    lv_obj_set_style_bg_color(scr_manual, lv_color_hex(0xADD8E6), 0);  /* 浅蓝色背景 */
+    lv_obj_set_style_bg_color(scr_manual, lv_color_hex(UI_COLOR_BG_SCREEN), 0);  /* 浅蓝色背景 */
     lv_obj_set_style_bg_opa(scr_manual, LV_OPA_COVER, 0);
 
     /* 创建标题栏 */
     lv_obj_t *title_container = lv_obj_create(scr_manual);
     lv_obj_set_size(title_container, 320, 40);
     lv_obj_align(title_container, LV_ALIGN_TOP_MID, 0, 0);
-    lv_obj_set_style_bg_color(title_container, lv_color_hex(0x4682B4), 0);
+    lv_obj_set_style_bg_color(title_container, lv_color_hex(UI_COLOR_BG_TITLE), 0);
     lv_obj_set_style_bg_opa(title_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(title_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -462,10 +487,10 @@ void create_manual_screen(void) {
     water_container = lv_obj_create(scr_manual);
     lv_obj_set_size(water_container, 280, 40);
     lv_obj_align(water_container, LV_ALIGN_TOP_MID, 0, 48);
-    lv_obj_set_style_bg_color(water_container, lv_color_hex(0x87CEEB), 0);  /* 蓝色背景 */
+    lv_obj_set_style_bg_color(water_container, lv_color_hex(UI_COLOR_BG_WATER), 0);  /* 蓝色背景 */
     lv_obj_set_style_bg_opa(water_container, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(water_container, 3, 0);  /* 选中时边框 */
-    lv_obj_set_style_border_color(water_container, lv_color_hex(0xFF0000), 0);  /* 红色边框表示选中 */
+    lv_obj_set_style_border_color(water_container, lv_color_hex(UI_COLOR_BORDER_SELECTED), 0);  /* 红色边框表示选中 */
     lv_obj_clear_flag(water_container, LV_OBJ_FLAG_SCROLLABLE);
 
     lv_obj_t *label_water = lv_label_create(water_container);
@@ -476,7 +501,7 @@ void create_manual_screen(void) {
 
     label_water_status = lv_label_create(water_container);
     lv_label_set_text(label_water_status, water_status ? "ON" : "OFF");
-    lv_obj_set_style_text_color(label_water_status, water_status ? lv_color_hex(0x00AA00) : lv_color_hex(0x666666), 0);
+    lv_obj_set_style_text_color(label_water_status, water_status ? lv_color_hex(UI_COLOR_STATUS_ON) : lv_color_hex(UI_COLOR_STATUS_OFF), 0);
     lv_obj_set_style_text_font(label_water_status, &lv_font_montserrat_16, 0);
     lv_obj_align(label_water_status, LV_ALIGN_RIGHT_MID, -10, 0);
 
@@ -484,7 +509,7 @@ void create_manual_screen(void) {
     light_container = lv_obj_create(scr_manual);
     lv_obj_set_size(light_container, 280, 40);
     lv_obj_align(light_container, LV_ALIGN_TOP_MID, 0, 96);
-    lv_obj_set_style_bg_color(light_container, lv_color_hex(0xFFEC8B), 0);  /* 黄色背景 */
+    lv_obj_set_style_bg_color(light_container, lv_color_hex(UI_COLOR_BG_LED), 0);  /* 黄色背景 */
     lv_obj_set_style_bg_opa(light_container, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(light_container, 0, 0);  /* 未选中无边框 */
     lv_obj_clear_flag(light_container, LV_OBJ_FLAG_SCROLLABLE);
@@ -497,7 +522,7 @@ void create_manual_screen(void) {
 
     label_light_status = lv_label_create(light_container);
     lv_label_set_text(label_light_status, light_status ? "ON" : "OFF");
-    lv_obj_set_style_text_color(label_light_status, light_status ? lv_color_hex(0x00AA00) : lv_color_hex(0x666666), 0);
+    lv_obj_set_style_text_color(label_light_status, light_status ? lv_color_hex(UI_COLOR_STATUS_ON) : lv_color_hex(UI_COLOR_STATUS_OFF), 0);
     lv_obj_set_style_text_font(label_light_status, &lv_font_montserrat_16, 0);
     lv_obj_align(label_light_status, LV_ALIGN_RIGHT_MID, -10, 0);
 
@@ -505,7 +530,7 @@ void create_manual_screen(void) {
     fan_container = lv_obj_create(scr_manual);
     lv_obj_set_size(fan_container, 280, 40);
     lv_obj_align(fan_container, LV_ALIGN_TOP_MID, 0, 144);
-    lv_obj_set_style_bg_color(fan_container, lv_color_hex(0x98FB98), 0);  /* 浅绿色背景 */
+    lv_obj_set_style_bg_color(fan_container, lv_color_hex(UI_COLOR_BG_FAN), 0);  /* 浅绿色背景 */
     lv_obj_set_style_bg_opa(fan_container, LV_OPA_COVER, 0);
     lv_obj_set_style_border_width(fan_container, 0, 0);  /* 未选中无边框 */
     lv_obj_clear_flag(fan_container, LV_OBJ_FLAG_SCROLLABLE);
@@ -518,7 +543,7 @@ void create_manual_screen(void) {
 
     label_fan_status = lv_label_create(fan_container);
     lv_label_set_text(label_fan_status, fun_status ? "ON" : "OFF");
-    lv_obj_set_style_text_color(label_fan_status, fun_status ? lv_color_hex(0x00AA00) : lv_color_hex(0x666666), 0);
+    lv_obj_set_style_text_color(label_fan_status, fun_status ? lv_color_hex(UI_COLOR_STATUS_ON) : lv_color_hex(UI_COLOR_STATUS_OFF), 0);
     lv_obj_set_style_text_font(label_fan_status, &lv_font_montserrat_16, 0);
     lv_obj_align(label_fan_status, LV_ALIGN_RIGHT_MID, -10, 0);
 
@@ -526,7 +551,7 @@ void create_manual_screen(void) {
     lv_obj_t *tip_container = lv_obj_create(scr_manual);
     lv_obj_set_size(tip_container, 320, 30);
     lv_obj_align(tip_container, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_obj_set_style_bg_color(tip_container, lv_color_hex(0x4682B4), 0);
+    lv_obj_set_style_bg_color(tip_container, lv_color_hex(UI_COLOR_BG_TITLE), 0);
     lv_obj_set_style_bg_opa(tip_container, LV_OPA_COVER, 0);
     lv_obj_clear_flag(tip_container, LV_OBJ_FLAG_SCROLLABLE);
 
@@ -545,15 +570,15 @@ void create_manual_screen(void) {
 void update_manual_screen() {
     /* 更新水泵状态 */
     lv_label_set_text(label_water_status, water_status ? "ON" : "OFF");
-    lv_obj_set_style_text_color(label_water_status, water_status ? lv_color_hex(0x00AA00) : lv_color_hex(0x666666), 0);
+    lv_obj_set_style_text_color(label_water_status, water_status ? lv_color_hex(UI_COLOR_STATUS_ON) : lv_color_hex(UI_COLOR_STATUS_OFF), 0);
 
     /* 更新补光灯状态 */
     lv_label_set_text(label_light_status, light_status ? "ON" : "OFF");
-    lv_obj_set_style_text_color(label_light_status, light_status ? lv_color_hex(0x00AA00) : lv_color_hex(0x666666), 0);
+    lv_obj_set_style_text_color(label_light_status, light_status ? lv_color_hex(UI_COLOR_STATUS_ON) : lv_color_hex(UI_COLOR_STATUS_OFF), 0);
 
     /* 更新风扇状态 */
     lv_label_set_text(label_fan_status, fun_status ? "ON" : "OFF");
-    lv_obj_set_style_text_color(label_fan_status, fun_status ? lv_color_hex(0x00AA00) : lv_color_hex(0x666666), 0);
+    lv_obj_set_style_text_color(label_fan_status, fun_status ? lv_color_hex(UI_COLOR_STATUS_ON) : lv_color_hex(UI_COLOR_STATUS_OFF), 0);
 
     /* 更新选中项高亮边框 */
     lv_obj_set_style_border_width(water_container, manual_index == 0 ? 3 : 0, 0);
@@ -561,11 +586,11 @@ void update_manual_screen() {
     lv_obj_set_style_border_width(fan_container, manual_index == 2 ? 3 : 0, 0);
 
     if (manual_index == 0) {
-        lv_obj_set_style_border_color(water_container, lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_border_color(water_container, lv_color_hex(UI_COLOR_BORDER_SELECTED), 0);
     } else if (manual_index == 1) {
-        lv_obj_set_style_border_color(light_container, lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_border_color(light_container, lv_color_hex(UI_COLOR_BORDER_SELECTED), 0);
     } else {
-        lv_obj_set_style_border_color(fan_container, lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_border_color(fan_container, lv_color_hex(UI_COLOR_BORDER_SELECTED), 0);
     }
 }
 
@@ -580,7 +605,26 @@ void hide_and_destroy_popup(lv_timer_t *timer) {
         popup_container = NULL;
         popup_label = NULL;
     }
-    lv_timer_del(timer);
+    if (popup_timer) {
+        lv_timer_del(popup_timer);
+        popup_timer = NULL;
+    }
+}
+
+/**
+ * @brief  清理弹窗（切换界面前调用）
+ * @note   安全清理弹窗和定时器，防止切换界面后定时器访问无效内存
+ * @retval 无
+ */
+static void cleanup_popup(void) {
+    /* 先删除定时器，防止回调访问无效内存 */
+    if (popup_timer) {
+        lv_timer_del(popup_timer);
+        popup_timer = NULL;
+    }
+    /* 清空指针（容器会随屏幕一起被销毁） */
+    popup_container = NULL;
+    popup_label = NULL;
 }
 
 /**
@@ -595,7 +639,7 @@ void create_popup(void) {
     popup_container = lv_obj_create(current_screen==SCREEN_MAIN?scr_main:(current_screen==SCREEN_MENU)?scr_menu:(current_screen==SCREEN_MANUAL)?scr_manual:scr_limit);
     lv_obj_set_size(popup_container, 200, 40);
     lv_obj_align(popup_container, LV_ALIGN_BOTTOM_RIGHT, -10, -10);  /* 屏幕右下角 */
-    lv_obj_set_style_bg_color(popup_container, lv_color_hex(0x4682B4), 0);
+    lv_obj_set_style_bg_color(popup_container, lv_color_hex(UI_COLOR_BG_POPUP), 0);
     lv_obj_set_style_bg_opa(popup_container, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(popup_container, 8, 0);  /* 圆角样式 */
     lv_obj_clear_flag(popup_container, LV_OBJ_FLAG_SCROLLABLE);
@@ -629,8 +673,8 @@ void show_popup(const char *message, uint32_t duration_ms) {
     lv_label_set_text(popup_label, message);
     lv_obj_clear_flag(popup_container, LV_OBJ_FLAG_HIDDEN);
     /* 设置定时器自动隐藏弹窗 */
-    lv_timer_t *timer = lv_timer_create(hide_and_destroy_popup, duration_ms, NULL);
-    lv_timer_set_repeat_count(timer, 1);
+    popup_timer = lv_timer_create(hide_and_destroy_popup, duration_ms, NULL);
+    lv_timer_set_repeat_count(popup_timer, 1);
 }
 
 /**
@@ -793,31 +837,41 @@ void UI_Switch(uint8_t key){
         /* 阈值设置界面按键处理 */
         switch(key){
             case WKUP_PRES:
-                break;
-            case KEY1_PRES:
-                /* 按下KEY1增加上限值 */
-                if(limit_page==1){
-                    lim_value.temp_upper=(lim_value.temp_upper+10)<=temp_max?lim_value.temp_upper+10:temp_min;
-                }else if(limit_page==2){
-                    lim_value.shumi_upper=(lim_value.shumi_upper+10)<=shumi_max?lim_value.shumi_upper+10:shumi_min;
+                /* 按下KEY_UP增加当前选中项的值 */
+                if(limit_index == 0){
+                    /* 增加上限值 */
+                    if(limit_page==1){
+                        lim_value.temp_upper=(lim_value.temp_upper+2)<=temp_max?lim_value.temp_upper+2:lim_value.temp_lower;
+                    }else if(limit_page==2){
+                        lim_value.shumi_upper=(lim_value.shumi_upper+10)<=shumi_max?lim_value.shumi_upper+10:lim_value.shumi_lower;
+                    }else{
+                        lim_value.light_upper=(lim_value.light_upper+10)<=light_max?lim_value.light_upper+10:lim_value.light_lower;
+                    }
                 }else{
-                    lim_value.light_upper=(lim_value.light_upper+10)<=light_max?lim_value.light_upper+10:light_min;
+                    /* 增加下限值 */
+                    if(limit_page==1){
+                        lim_value.temp_lower=(lim_value.temp_lower+2)<=lim_value.temp_upper?lim_value.temp_lower+2:temp_min;
+                    }else if(limit_page==2){
+                        lim_value.shumi_lower=(lim_value.shumi_lower+10)<=lim_value.shumi_upper?lim_value.shumi_lower+10:shumi_min;
+                    }else{
+                        lim_value.light_lower=(lim_value.light_lower+10)<=lim_value.light_upper?lim_value.light_lower+10:light_min;
+                    }
                 }
-                update_limit_value();
+                update_limit_screen();
                 break;
             case KEY0_PRES:
-                /* 按下KEY0增加下限值 */
-                if(limit_page==1){
-                    lim_value.temp_lower=(lim_value.temp_lower+10)<=temp_max?lim_value.temp_lower+10:temp_min;
-                }else if(limit_page==2){
-                    lim_value.shumi_lower=(lim_value.shumi_lower+10)<=shumi_max?lim_value.shumi_lower+10:shumi_min;
-                }else{
-                    lim_value.light_lower=(lim_value.light_lower+10)<=light_max?lim_value.light_lower+10:light_min;
-                }
-                update_limit_value();
+                /* 按下KEY0选择下移 */
+                limit_index = (limit_index + 1) % 2;
+                update_limit_screen();
+                break;
+            case KEY1_PRES:
+                /* 按下KEY1选择上移 */
+                limit_index = (limit_index + 1) % 2;  /* 只有两项，+1即可 */
+                update_limit_screen();
                 break;
             case 10:
                 /* 按下TPAD返回菜单界面 */
+                limit_index = 0;
                 destory_active_screen();
                 create_menu_screen();
                 lv_scr_load(scr_menu);
@@ -843,14 +897,14 @@ void Warn_function(void){
             FUN_ON;
             fun_status=1;
         }
-        lv_obj_set_style_text_color(label_temp, lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_text_color(label_temp, lv_color_hex(UI_COLOR_WARN_HIGH), 0);
     }else if(temp<lim_value.temp_lower){
         /* 温度低于下限，关闭风扇，文字变蓝 */
         if(!mode&&fun_status){
             FUN_OFF;
             fun_status=0;
         }
-        lv_obj_set_style_text_color(label_temp, lv_color_hex(0x0000FF), 0);
+        lv_obj_set_style_text_color(label_temp, lv_color_hex(UI_COLOR_WARN_LOW), 0);
     }else{
         /* 温度正常，关闭风扇，文字白色 */
         if(!mode&&fun_status){
@@ -862,9 +916,9 @@ void Warn_function(void){
 
     /* 空气湿度告警处理 */
     if(humi>lim_value.humi_upper){
-        lv_obj_set_style_text_color(label_humi, lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_text_color(label_humi, lv_color_hex(UI_COLOR_WARN_HIGH), 0);
     }else if(humi<lim_value.humi_lower){
-        lv_obj_set_style_text_color(label_humi, lv_color_hex(0x0000FF), 0);
+        lv_obj_set_style_text_color(label_humi, lv_color_hex(UI_COLOR_WARN_LOW), 0);
     }else{
         lv_obj_set_style_text_color(label_humi, lv_color_white(), 0);
     }
@@ -876,14 +930,14 @@ void Warn_function(void){
             BUMP_OFF;
             water_status=0;
         }
-        lv_obj_set_style_text_color(label_soil_humi, lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_text_color(label_soil_humi, lv_color_hex(UI_COLOR_WARN_HIGH), 0);
     }else if(soil_humi<lim_value.shumi_lower){
         /* 土壤湿度低于下限，自动模式下开启水泵 */
         if(!mode&&!water_status){
             BUMP_ON;
             water_status=1;
         }
-        lv_obj_set_style_text_color(label_soil_humi, lv_color_hex(0x0000FF), 0);
+        lv_obj_set_style_text_color(label_soil_humi, lv_color_hex(UI_COLOR_WARN_LOW), 0);
     }else{
 				if(!mode&&water_status){
             BUMP_OFF;
@@ -895,14 +949,14 @@ void Warn_function(void){
     /* 光照强度告警处理及自动补光 */
     if(light_intensity>lim_value.light_upper){
         /* 光照超上限，自动模式下关闭补光灯 */
-        lv_obj_set_style_text_color(label_light, lv_color_hex(0xFF0000), 0);
+        lv_obj_set_style_text_color(label_light, lv_color_hex(UI_COLOR_WARN_HIGH), 0);
         if(!mode&&light_status){
             LED1=1;
             light_status=0;
         }
     }else if(light_intensity<lim_value.light_lower){
         /* 光照低于下限，自动模式下开启补光灯 */
-        lv_obj_set_style_text_color(label_light, lv_color_hex(0x0000FF), 0);
+        lv_obj_set_style_text_color(label_light, lv_color_hex(UI_COLOR_WARN_LOW), 0);
         if(!mode&&!light_status){
             LED1=0;
             light_status=1;
