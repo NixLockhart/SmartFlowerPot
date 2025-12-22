@@ -33,8 +33,8 @@
 #define MY_WIFI_PWD            "12345678"          /* WiFi密码 */
 #define MY_SERVER_IP           "111.228.6.160"     /* 服务器IP */
 #define MY_SERVER_PORT         "8003"              /* 服务器TCP端口 (设备连接) */
-#define MY_DEVICE_ID           "SFP"           /* 设备唯一标识 */
-#define MY_USER_ID             "nix"                  /* 绑定的用户ID (在服务器注册的用户名) */
+#define MY_DEVICE_ID           "Device_id"           /* 设备唯一标识 (记得修改这个) */
+#define MY_USER_ID             "User_id"                  /* 绑定的用户ID (在“NK星云APP”注册的用户名) */
 
 /******************************************************************************************/
 /* 连接状态定义 */
