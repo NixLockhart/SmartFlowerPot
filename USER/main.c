@@ -130,7 +130,8 @@ int main(void)
 
 		Get_Monitor_Value();
 
-		if (t >= 4) {
+		/* 每200ms(t%4==0)执行数据上报 */
+		if (t % 4 == 0) {
 			Warn_function();
 
 			/* 发送传感器数据到服务器 */
@@ -148,7 +149,21 @@ int main(void)
 				device_status.fan_status = fun_status;
 				myserver_send_device_status(&device_status);
 			}
+		}
+
+		/* 每5秒(t>=99)检测WiFi和服务器连接状态 */
+		if (t >= 99) {
 			t = 0;
+			/* WiFi已连接但服务器未连接，尝试重连服务器 */
+			if (wifi_sta == 1 && atkcld_sta == 0) {
+				printf("[Reconnect] Trying to reconnect server...\r\n");
+				if (myserver_connect() == 0) {
+					atkcld_sta = 1;
+					create_popup();
+					show_popup("Server Reconnected!", 2000);
+					printf("[Reconnect] Server reconnected!\r\n");
+				}
+			}
 		}
 
 		/* 处理服务器命令 */
