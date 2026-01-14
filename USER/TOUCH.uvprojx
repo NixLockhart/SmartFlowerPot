@@ -603,22 +603,17 @@
           </Files>
         </Group>
         <Group>
-          <GroupName>README</GroupName>
-          <Files>
-            <File>
-              <FileName>README.TXT</FileName>
-              <FileType>5</FileType>
-              <FilePath>..\README.TXT</FilePath>
-            </File>
-          </Files>
-        </Group>
-        <Group>
-          <GroupName>Middlewares/lvgl/example/porting</GroupName>
+          <GroupName>Middlewares/lvgl/src/examples/porting</GroupName>
           <Files>
             <File>
               <FileName>lv_port_disp_template.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Middlewares\LVGL\GUI\lvgl\examples\porting\lv_port_disp_template.c</FilePath>
+            </File>
+            <File>
+              <FileName>lv_port_fs_template.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Middlewares\LVGL\GUI\lvgl\examples\porting\lv_port_fs_template.c</FilePath>
             </File>
             <File>
               <FileName>lv_port_indev_template.c</FileName>

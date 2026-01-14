@@ -2,8 +2,9 @@
  ****************************************************************************************************
  * @file        dht11.c
  * @author      NixStudio(NixLockhart)
- * @version     V1.0
- * @date        2025-01-02
+ * @version     V1.3
+ * @lastupdate  2025-01-02
+ * @date        2026-01-14
  * @brief       DHT11相关操作
  ****************************************************************************************************
  * @attention
@@ -20,26 +21,26 @@
  //发送复位信号给 DHT11，启动数据通信
 void DHT11_Rst(void)
 {
-    DHT11_IO_OUT();     //SET OUTPUT
-    DHT11_DQ_OUT(0);     //??DQ
-    delay_ms(20);        //????18ms
-    DHT11_DQ_OUT(1);     //DQ=1 
-    delay_us(30);         //????20~40us
+    DHT11_IO_OUT();
+    DHT11_DQ_OUT(0);
+    delay_ms(20);
+    DHT11_DQ_OUT(1);
+    delay_us(30);
 }
 
 //检测 DHT11 的响应信号，判断其是否准备好通信
 uint8_t DHT11_Check(void)
 {
     uint8_t retry = 0;
-    DHT11_IO_IN();//SET INPUT     
-    while (DHT11_DQ_IN && retry < 100)//DHT11???40~80us
+    DHT11_IO_IN();
+    while (DHT11_DQ_IN && retry < 100)
     {
         retry++;
         delay_us(1);
     };
     if (retry >= 100)return 1;
     else retry = 0;
-    while (!DHT11_DQ_IN && retry < 100)//DHT11????????40~80us
+    while (!DHT11_DQ_IN && retry < 100)
     {
         retry++;
         delay_us(1);

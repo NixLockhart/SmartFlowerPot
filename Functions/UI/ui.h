@@ -58,6 +58,10 @@
 #define UI_COLOR_WARN_HIGH          0xFF4500    /* 橙红色 - 高温/超上限告警 */
 #define UI_COLOR_WARN_LOW           0x1E90FF    /* 天蓝色 - 低温/低于下限告警 */
 
+/* WiFi状态颜色 */
+#define UI_COLOR_WIFI_CON           0x1E90FF    /* 蓝色 - WiFi已连接 */
+#define UI_COLOR_WIFI_UNC           0xFF0000    /* 红色 - WiFi未连接 */
+
 //屏幕类型枚举
 typedef enum {
     SCREEN_MAIN,
@@ -116,6 +120,7 @@ void destory_active_screen(void);
 void handle_menu_selection(int index);
 screen_t get_current_screen(void);
 void set_current_screen(screen_t screen);
+void update_wifi_status(void);
 
 #endif
 

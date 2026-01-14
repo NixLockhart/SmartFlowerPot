@@ -4,11 +4,11 @@
   * @author  NixStudio(Nix Lockhart)
   * @version V1.3
   * @date    2025-12-13
-  * @brief
+  * @brief   智能花盆主程序
   ******************************************************************************
   * @attention
   *
-  * 平台:正点原子 STM32F103开发板
+  * 平台: 正点原子 STM32F103开发板
   *
   ******************************************************************************
   */
@@ -40,27 +40,30 @@
 #include "lv_port_indev_template.h"
 
 
-
-//系统初始化
+/**
+ * @brief  系统初始化
+ * @param  无
+ * @retval 无
+ */
 void System_Init() {
 	uint8_t ret;
 	delay_init();
 	NVIC_PriorityGroupConfig(NVIC_PriorityGroup_2);
 	uart_init(115200);
-	LED_Init();	 						//初始化LED
-	Adc_Init();							//初始化Adc
-	KEY_Init();							//初始化按键
-	tpad_init(6);						//初始化触摸按键
-	Lsens_Init();						//初始化光敏传感器
-	TS_Init();							//初始化土壤湿度传感器(PA5)
-	tp_dev.init();					//初始化触摸屏
+	LED_Init();	 				/* 初始化LED */
+	Adc_Init();					/* 初始化ADC */
+	KEY_Init();					/* 初始化按键 */
+	tpad_init(6);				/* 初始化触摸按键 */
+	Lsens_Init();				/* 初始化光敏传感器 */
+	TS_Init();					/* 初始化土壤湿度传感器(PA5) */
+	tp_dev.init();				/* 初始化触摸屏 */
 	TIM3_Int_Init(71, 999);
-	lv_init();							//初始化lvgl
+	lv_init();					/* 初始化LVGL */
 	lv_port_disp_init();
 	lv_port_indev_init();
-	BUMP_Init();						//初始化水泵继电器(PA7)
-	FUN_Init();							//初始化风扇继电器(PA6)
-	while (DHT11_Init())		//初始化温湿度传感器(PG11)
+	BUMP_Init();				/* 初始化水泵继电器(PA7) */
+	FUN_Init();					/* 初始化风扇继电器(PA6) */
+	while (DHT11_Init())		/* 初始化温湿度传感器(PG11) */
 	{
 		delay_us(500);
 	}
@@ -73,17 +76,26 @@ void System_Init() {
 		printf("WiFi module init failed!\r\n");
 	}
 
-	// 初始化UI模块
+	/* 初始化UI模块 */
 	UI_Init();
 }
 
-//更新传感器数值
+/**
+ * @brief  更新传感器数值
+ * @param  无
+ * @retval 无
+ */
 void Get_Monitor_Value(void) {
-	DHT11_Read_Data(&temp, &humi);   		//温湿度
-	TS_GetData(&soil_humi);         		//土壤湿度
-	Lsens_Get_Val(&light_intensity);		//光照强度
+	DHT11_Read_Data(&temp, &humi);   		/* 温湿度 */
+	TS_GetData(&soil_humi);         		/* 土壤湿度 */
+	Lsens_Get_Val(&light_intensity);		/* 光照强度 */
 }
 
+/**
+ * @brief  主函数
+ * @param  无
+ * @retval 无
+ */
 int main(void)
 {
 	uint8_t t = 0;
@@ -123,7 +135,7 @@ int main(void)
 		uint8_t key = KEY_Scan(0);
 		UI_Switch(key);
 
-		// 触摸按键检测
+		/* 检测触摸按键 */
 		if (tpad_scan(0)) {
 			UI_Switch(10);
 		}
@@ -154,7 +166,26 @@ int main(void)
 		/* 每5秒(t>=99)检测WiFi和服务器连接状态 */
 		if (t >= 99) {
 			t = 0;
-			/* WiFi已连接但服务器未连接，尝试重连服务器 */
+
+			/* 检测服务器连接状态并更新显示 */
+			uint8_t server_check = myserver_check_server();
+			if (server_check == MY_SERVER_CONNECTED) {
+				atkcld_sta = 1;
+			} else {
+				atkcld_sta = 0;
+			}
+
+			/* 检测WiFi连接状态 */
+			uint8_t wifi_check = myserver_check_wifi();
+			if (wifi_check == MY_WIFI_CONNECTED) {
+				wifi_sta = 1;
+			} else {
+				wifi_sta = 0;
+				atkcld_sta = 0;  /* WiFi断开时服务器也断开 */
+			}
+			update_wifi_status();
+
+			/* WiFi已连接但服务器未连接, 尝试重新连接 */
 			if (wifi_sta == 1 && atkcld_sta == 0) {
 				printf("[Reconnect] Trying to reconnect server...\r\n");
 				if (myserver_connect() == 0) {
@@ -166,10 +197,10 @@ int main(void)
 			}
 		}
 
-		/* 处理服务器命令 */
+		/* 处理无线控制命令 */
 		myserver_wireless_control();
 
-		/* 心跳处理 */
+		/* 处理数据 */
 		myserver_process();
 
 		if (get_current_screen() == SCREEN_MAIN) {

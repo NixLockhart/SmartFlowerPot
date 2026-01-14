@@ -44,6 +44,8 @@ my_device_config_t g_device_config = {0};               /* 设备动态配置 (V
 /* 私有变量 */
 
 static uint32_t s_heartbeat_timer = 0;      /* 心跳计时器 */
+static uint32_t s_heartbeat_timeout = 0;    /* 心跳超时计数器 (等待响应) */
+static uint8_t  s_heartbeat_pending = 0;    /* 心跳响应等待标志 */
 static uint32_t s_msg_seq = 0;              /* 消息序列号 */
 /* 接收到的命令结构 - 增加字符串ID存储 */
 static char s_cmd_id_str[64];               /* 命令ID字符串 (用于ACK响应) - UUID长度为36字符 */
@@ -57,6 +59,7 @@ static uint8_t send_json_message(const char *json);
 static uint8_t parse_json_command(const char *json);
 static int find_json_int(const char *json, const char *key);
 static char* find_json_string(const char *json, const char *key, char *out, uint8_t max_len);
+static uint8_t check_tcp_disconnected(void);
 
 /******************************************************************************************/
 /* 初始化与连接 */
@@ -334,17 +337,44 @@ uint8_t myserver_check_server(void)
 
 /**
  * @brief  服务器通信处理 (在主循环中周期调用)
+ * @note   处理心跳发送、超时检测、TCP断开检测
  */
 void myserver_process(void)
 {
-    /* 心跳处理 - 每10秒发送一次 */
+    /* 检测TCP是否断开 (透传模式下ESP8266返回CLOSED) */
+    if (check_tcp_disconnected())
+    {
+        printf("[MyServer] TCP connection lost!\r\n");
+        g_my_server_status = MY_SERVER_DISCONNECTED;
+        s_heartbeat_pending = 0;
+        s_heartbeat_timeout = 0;
+        return;
+    }
+
+    /* 心跳超时检测 - 如果等待响应超过30秒，认为连接断开 */
+    if (s_heartbeat_pending)
+    {
+        s_heartbeat_timeout++;
+        if (s_heartbeat_timeout >= 600)  /* 600 * 50ms = 30s */
+        {
+            printf("[MyServer] Heartbeat timeout, connection lost!\r\n");
+            g_my_server_status = MY_SERVER_DISCONNECTED;
+            s_heartbeat_pending = 0;
+            s_heartbeat_timeout = 0;
+            return;
+        }
+    }
+
+    /* 心跳发送 - 每15秒发送一次 */
     s_heartbeat_timer++;
-    if (s_heartbeat_timer >= 200)  /* 200 * 50ms = 10s */
+    if (s_heartbeat_timer >= 300)  /* 300 * 50ms = 15s */
     {
         s_heartbeat_timer = 0;
         if (g_my_server_status == MY_SERVER_CONNECTED)
         {
             myserver_send_heartbeat();
+            s_heartbeat_pending = 1;   /* 标记等待心跳响应 */
+            s_heartbeat_timeout = 0;   /* 重置超时计数器 */
         }
     }
 }
@@ -470,7 +500,9 @@ static uint8_t parse_json_command(const char *json)
     /* 解析心跳响应: t="hb_ok" */
     else if (strcmp(type_buf, "hb_ok") == 0)
     {
-        /* 心跳响应，无需特殊处理 */
+        /* 心跳响应，清除等待标志 */
+        s_heartbeat_pending = 0;
+        s_heartbeat_timeout = 0;
         return 0;
     }
     /* 解析注册响应: t="reg_ok" */
@@ -543,6 +575,42 @@ static char* find_json_string(const char *json, const char *key, char *out, uint
     out[len] = '\0';
 
     return out;
+}
+
+/**
+ * @brief  检测TCP连接是否断开
+ * @note   在透传模式下，当TCP连接断开时，ESP8266会返回 "CLOSED" 字符串
+ * @retval 0:连接正常 1:连接已断开
+ */
+static uint8_t check_tcp_disconnected(void)
+{
+    uint8_t *buf;
+
+    /* 获取接收缓冲区数据 (不消耗，只peek) */
+    buf = atk_mw8266d_uart_rx_get_frame();
+    if (buf == NULL)
+    {
+        return 0;  /* 没有数据，连接正常 */
+    }
+
+    /* 检测TCP断开标志 */
+    if (strstr((char *)buf, "CLOSED") != NULL)
+    {
+        printf("[MyServer] Detected CLOSED in data\r\n");
+        atk_mw8266d_uart_rx_restart();  /* 清空接收缓冲区 */
+        return 1;  /* 连接已断开 */
+    }
+
+    /* 检测WiFi断开标志 */
+    if (strstr((char *)buf, "WIFI DISCONNECT") != NULL)
+    {
+        printf("[MyServer] Detected WIFI DISCONNECT\r\n");
+        g_my_wifi_status = MY_WIFI_DISCONNECTED;
+        atk_mw8266d_uart_rx_restart();
+        return 1;
+    }
+
+    return 0;  /* 连接正常 */
 }
 
 /******************************************************************************************/

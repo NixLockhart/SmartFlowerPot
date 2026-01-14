@@ -68,6 +68,7 @@ static lv_obj_t *label_water_status;
 static lv_obj_t *label_fan_status;
 static lv_obj_t *label_lower_value;
 static lv_obj_t *label_upper_value;
+static lv_obj_t *label_wifi_status;  /* WiFi状态标签 */
 
 /* 弹窗容器对象 */
 static lv_obj_t *popup_container;
@@ -150,6 +151,14 @@ void create_main_screen(void) {
     lv_obj_set_style_text_color(title_label, lv_color_white(), 0);
     lv_obj_set_style_text_font(title_label, &lv_font_montserrat_18, 0);
     lv_obj_align(title_label, LV_ALIGN_CENTER, 0, 0);
+
+    /* WiFi状态标签 - 标题栏右侧 */
+    label_wifi_status = lv_label_create(title_container);
+    lv_label_set_text(label_wifi_status, wifi_sta ? "CON" : "UNC");
+    lv_obj_set_style_text_color(label_wifi_status,
+        wifi_sta ? lv_color_hex(UI_COLOR_WIFI_CON) : lv_color_hex(UI_COLOR_WIFI_UNC), 0);
+    lv_obj_set_style_text_font(label_wifi_status, &lv_font_montserrat_14, 0);
+    lv_obj_align(label_wifi_status, LV_ALIGN_RIGHT_MID, -10, 0);
 
     /* 温度容器 - 左上角 */
     lv_obj_t *temp_container = lv_obj_create(scr_main);
@@ -985,4 +994,18 @@ screen_t get_current_screen(void) {
  */
 void set_current_screen(screen_t screen) {
     current_screen = screen;
+}
+
+/**
+ * @brief  更新WiFi状态显示
+ * @note   在主屏幕标题栏显示WiFi连接状态
+ *         CON(蓝色) - 已连接, UNC(红色) - 未连接
+ * @retval 无
+ */
+void update_wifi_status(void) {
+    if (current_screen == SCREEN_MAIN && label_wifi_status != NULL) {
+        lv_label_set_text(label_wifi_status, wifi_sta ? "CON" : "UNC");
+        lv_obj_set_style_text_color(label_wifi_status,
+            wifi_sta ? lv_color_hex(UI_COLOR_WIFI_CON) : lv_color_hex(UI_COLOR_WIFI_UNC), 0);
+    }
 }
