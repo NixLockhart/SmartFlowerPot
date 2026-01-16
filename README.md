@@ -211,6 +211,7 @@ SmartFlowerPot/
 
 ## 相关链接
 
+- [演示视频](https://b23.tv/nAN3Vkl)
 - [正点原子论坛](http://www.openedv.com/)
 - [LVGL 官方文档](https://docs.lvgl.io/)
 - [STM32F103 参考手册](https://www.st.com/resource/en/reference_manual/rm0008-stm32f101xx-stm32f102xx-stm32f103xx-stm32f105xx-and-stm32f107xx-advanced-armbased-32bit-mcus-stmicroelectronics.pdf)
